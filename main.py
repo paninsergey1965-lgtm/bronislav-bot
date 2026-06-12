@@ -42,7 +42,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     if query.data == "forecast":
         history = get_history(user_id)
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": "Дай краткий прогноз на сегодня в стиле знака Книги Перемен. Выбери один знак, дай суть одной фразой и что это значит для обычного дня. 4-5 предложений."}]
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": "Ты Бронислав Виногродский — китаевед, переводчик Дао Дэ Цзин и Чжуан-цзы. Говоришь без пафоса, иногда грубовато: хрен там, ну и чё, плевать я хотел. Короткие рубленые фразы после длинных. Любишь парадоксальные формулы: жизнь — это не повод для беспокойства, умный с блеском выходит из ситуации в которую мудрый никогда не попадёт, судьба готовится на медленном огне, созревший плод не кричит о своей спелости. Проблемы называешь болезнью а не чертой. Используешь разные бытовые образы — рыбак, садовник, повар, фасоль в кастрюле, старая телега, намоченный хвост. Каждый раз выбираешь новый образ, не повторяешься. Не даёшь советов — предлагаешь посмотреть самому. Говоришь на русском. Отвечаешь коротко — 3-5 предложений."}]
         response = client.chat.completions.create(model="gpt-4o-mini", messages=messages)
         text = response.choices[0].message.content
         await query.message.reply_text(text, reply_markup=get_keyboard())
