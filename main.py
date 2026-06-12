@@ -53,6 +53,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = response.choices[0].message.content
         await query.message.reply_text(text, reply_markup=get_keyboard())
     elif query.data == "draw":
+        await query.message.reply_text("Рисую...")
         history = get_history(user_id)
         context_text = " ".join([m["content"] for m in history[-4:]]) if history else "daoist philosophy, change, the way"
         prompt_msg = [{"role": "user", "content": "Based on this conversation, write a short image description for Chinese ink wash painting style. English only, 1-2 sentences. Context: " + context_text}]
