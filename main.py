@@ -27,6 +27,7 @@ def add_to_history(user_id, role, content):
 def get_keyboard():
     keyboard = [
         [InlineKeyboardButton("Мудрость", callback_data="wisdom"),
+         InlineKeyboardButton("Нарисуй", callback_data="draw"),
          InlineKeyboardButton("Забыть всё", callback_data="clear")]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -51,6 +52,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = client.chat.completions.create(model="gpt-4o-mini", messages=messages)
         text = response.choices[0].message.content
         await query.message.reply_text(text, reply_markup=get_keyboard())
+    elif query.data == "draw":
+        history = get_history(user_id)
+        context_text = " ".join([m["content"] for m in history[-4:]]) if history else "daoist philosophy, change, the way"
+        prompt_msg = [{"role": "user", "content": "Based on this conversation, write a short image description for Chinese ink wash painting style. English only, 1-2 sentences. Context: " + context_text}]
+        prompt_response = client.chat.completions.create(model="gpt-4o-mini", messages=prompt_msg)
+        image_prompt = "Chinese ink wash painting, minimalist, " + prompt_response.choices[0].message.content
+        image_response = client.images.generate(model="dall-e-3", prompt=image_prompt, size="1024x1024", n=1)
+        await query.message.reply_photo(photo=image_response.data[0].url, reply_markup=get_keyboard())
     elif query.data == "clear":
         conversation_history[user_id] = []
         await query.message.reply_text("Забыл всё. Начнём заново.", reply_markup=get_keyboard())
