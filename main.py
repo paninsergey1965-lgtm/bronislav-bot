@@ -26,7 +26,6 @@ def add_to_history(user_id, role, content):
 
 def get_keyboard():
     keyboard = [
-        [InlineKeyboardButton("Прогноз дня", callback_data="forecast")],
         [InlineKeyboardButton("Мудрость", callback_data="wisdom"),
          InlineKeyboardButton("Забыть всё", callback_data="clear")]
     ]
