@@ -1,16 +1,27 @@
 import os
+import random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, MessageHandler, filters, ContextTypes, CallbackQueryHandler, CommandHandler
 from openai import OpenAI
-from datetime import datetime
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_KEY)
 
+PAINTING_URL = "https://raw.githubusercontent.com/paninsergey1965-lgtm/jadekey-art/main/56368897-14E3-49FF-908F-FFC3C3E5127A.png"
+
+QUOTES = [
+    "Умный с блеском выходит из ситуации, в которую мудрый никогда не попадёт.",
+    "Жизнь — это не повод для беспокойства.",
+    "Судьба готовится на медленном огне.",
+    "Созревший плод не кричит о своей спелости.",
+    "Плевать я хотел на то, что думают про плевки.",
+]
+
 SYSTEM_PROMPT = "Ты Бронислав Виногродский — китаевед, переводчик Дао Дэ Цзин и Чжуан-цзы. Говоришь без пафоса, иногда грубовато: хрен там, ну и чё, плевать я хотел. Короткие рубленые фразы после длинных. Любишь парадоксальные формулы: жизнь — это не повод для беспокойства, умный с блеском выходит из ситуации в которую мудрый никогда не попадёт. Проблемы называешь болезнью а не чертой. Используешь бытовые образы — кот вокруг коробки, рыбак который не бросает сеть в каждую лужу. Не даёшь советов — предлагаешь посмотреть самому. Говоришь на русском. Отвечаешь коротко — 3-5 предложений."
 
 conversation_history = {}
+message_counter = {}
 MAX_HISTORY = 10
 
 def get_history(user_id):
@@ -26,31 +37,41 @@ def add_to_history(user_id, role, content):
 
 def get_keyboard():
     keyboard = [
-        [InlineKeyboardButton("Мудрость", callback_data="wisdom"),
-         InlineKeyboardButton("Забыть всё", callback_data="clear")]
+        [InlineKeyboardButton("✨ Мудрость", callback_data="wisdom"),
+         InlineKeyboardButton("🖌 Нарисуй", callback_data="draw")],
+        [InlineKeyboardButton("🔄 Забыть всё", callback_data="clear")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     conversation_history[user_id] = []
-    await update.message.reply_text("Доброе утро добрым людям.", reply_markup=get_keyboard())
+    message_counter[user_id] = 0
+    await update.message.reply_photo(
+        photo=PAINTING_URL,
+        caption=(
+            "«Снисходительность» — Бронислав Виногродский, 2016\n\n"
+            "Умный с блеском выходит из ситуации,\n"
+            "в которую мудрый никогда не попадёт.\n\n"
+            "Говори. Слушаю."
+        ),
+        reply_markup=get_keyboard()
+    )
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
-    if query.data == "forecast":
-        history = get_history(user_id)
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": "Ты Бронислав Виногродский — китаевед, переводчик Дао Дэ Цзин и Чжуан-цзы. Говоришь без пафоса, иногда грубовато: хрен там, ну и чё, плевать я хотел. Короткие рубленые фразы после длинных. Любишь парадоксальные формулы: жизнь — это не повод для беспокойства, умный с блеском выходит из ситуации в которую мудрый никогда не попадёт, судьба готовится на медленном огне, созревший плод не кричит о своей спелости. Проблемы называешь болезнью а не чертой. Используешь разные бытовые образы — рыбак, садовник, повар, фасоль в кастрюле, старая телега, намоченный хвост. Каждый раз выбираешь новый образ, не повторяешься. Не даёшь советов — предлагаешь посмотреть самому. Говоришь на русском. Отвечаешь коротко — 3-5 предложений."}]
+
+    if query.data == "wisdom":
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": "Скажи одну короткую мудрость — свою любимую формулу. Одно-два предложения."}
+        ]
         response = client.chat.completions.create(model="gpt-4o-mini", messages=messages)
         text = response.choices[0].message.content
         await query.message.reply_text(text, reply_markup=get_keyboard())
-    elif query.data == "wisdom":
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": "Скажи одну короткую мудрость — свою любимую формулу. Одно-два предложения."}]
-        response = client.chat.completions.create(model="gpt-4o-mini", messages=messages)
-        text = response.choices[0].message.content
-        await query.message.reply_text(text, reply_markup=get_keyboard())
+
     elif query.data == "draw":
         await query.message.reply_text("Рисую...")
         history = get_history(user_id)
@@ -60,8 +81,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         image_prompt = "Chinese ink wash painting, minimalist, " + prompt_response.choices[0].message.content
         image_response = client.images.generate(model="dall-e-2", prompt=image_prompt, size="512x512", n=1)
         await query.message.reply_photo(photo=image_response.data[0].url, reply_markup=get_keyboard())
+
     elif query.data == "clear":
         conversation_history[user_id] = []
+        message_counter[user_id] = 0
         await query.message.reply_text("Забыл всё. Начнём заново.", reply_markup=get_keyboard())
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -85,11 +108,19 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text
     add_to_history(user_id, "user", text)
+    message_counter[user_id] = message_counter.get(user_id, 0) + 1
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + get_history(user_id)
     response = client.chat.completions.create(model="gpt-4o-mini", messages=messages)
     reply_text = response.choices[0].message.content
     add_to_history(user_id, "assistant", reply_text)
     await update.message.reply_text(reply_text, reply_markup=get_keyboard())
+    if message_counter[user_id] % 5 == 0:
+        quote = random.choice(QUOTES)
+        await update.message.reply_photo(
+            photo=PAINTING_URL,
+            caption=f"_{quote}_",
+            parse_mode="Markdown"
+        )
 
 app = Application.builder().token(TELEGRAM_TOKEN).build()
 app.add_handler(CommandHandler("start", start))
