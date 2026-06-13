@@ -80,7 +80,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         prompt_response = client.chat.completions.create(model="gpt-4o-mini", messages=prompt_msg)
         image_prompt = "Chinese ink wash painting, minimalist, " + prompt_response.choices[0].message.content
         image_response = client.images.generate(model="gpt-image-1", prompt=image_prompt, size="1024x1024", n=1)
-        await query.message.reply_photo(photo=image_response.data[0].url, reply_markup=get_keyboard())
+        import base64
+        img_bytes = base64.b64decode(image_response.data[0].b64_json)
+        await query.message.reply_photo(photo=img_bytes, reply_markup=get_keyboard())
 
     elif query.data == "clear":
         conversation_history[user_id] = []
