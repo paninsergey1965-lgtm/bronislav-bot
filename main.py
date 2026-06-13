@@ -79,7 +79,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         prompt_msg = [{"role": "user", "content": "Based on this conversation, write a short image description for Chinese ink wash painting style. English only, 1-2 sentences. Context: " + context_text}]
         prompt_response = client.chat.completions.create(model="gpt-4o-mini", messages=prompt_msg)
         image_prompt = "Chinese ink wash painting, minimalist, " + prompt_response.choices[0].message.content
-        image_response = client.images.generate(model="dall-e-2", prompt=image_prompt, size="512x512", n=1)
+        image_response = client.images.generate(model="gpt-image-1", prompt=image_prompt, size="1024x1024", n=1)
         await query.message.reply_photo(photo=image_response.data[0].url, reply_markup=get_keyboard())
 
     elif query.data == "clear":
