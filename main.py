@@ -82,7 +82,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context_text = " ".join([m["content"] for m in history[-4:]]) if history else "daoist philosophy, change, the way"
         prompt_msg = [{"role": "user", "content": "Based on this conversation, write a short image description for Chinese ink wash painting style. English only, 1-2 sentences. Context: " + context_text}]
         prompt_response = client.chat.completions.create(model="gpt-4o-mini", messages=prompt_msg)
-        image_prompt = "Chinese ink wash painting, minimalist, " + prompt_response.choices[0].message.content
+        image_prompt = "Traditional Chinese painting, warm colors, red and gold accents, rich ink details, emotional, vibrant, in the style of classic gongbi and xieyi, " + prompt_response.choices[0].message.content
         image_response = client.images.generate(model="gpt-image-1", prompt=image_prompt, size="1024x1024", n=1)
         import base64
         img_bytes = base64.b64decode(image_response.data[0].b64_json)
